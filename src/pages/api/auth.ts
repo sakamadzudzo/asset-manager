@@ -9,13 +9,26 @@ async function login(authDto: {
   rememberMe: boolean;
 }) {
   const client = await getClient();
-  const sql: string =
-    "SELECT ID, SALUTATION, FIRSTNAME, OTHERNAMES, LASTNAME, ROLES, EMAIL, PHONE, USERNAME, PASSWORD FROM ASSET.USER WHERE USERNAME = '" +
-    authDto.username +
-    "' ORDER BY ID DESC";
+  const sql: string = `
+    SELECT
+      ID,
+      SALUTATION,
+      FIRSTNAME,
+      OTHERNAMES,
+      LASTNAME,
+      ROLES,
+      EMAIL,
+      PHONE,
+      USERNAME,
+      PASSWORD
+    FROM
+      ASSET.USER
+    WHERE
+      USERNAME = $1
+    ORDER BY ID DESC`;
 
   try {
-    const result = await client.query(sql);
+    const result = await client.query(sql, [authDto.username]);
     if (result.rowCount == null || result.rowCount < 1) {
       throw new ApiError("Login failed: User not found", 400);
     }
@@ -32,16 +45,6 @@ async function login(authDto: {
   }
 }
 
-async function register(registerDto: any) {
-  const res = await fetch(`${API_BASE}/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(registerDto),
-  });
-  if (!res.ok) throw new ApiError("Registration failed", res.status);
-  return res.json();
-}
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -53,10 +56,6 @@ export default async function handler(
       if (action === "login") {
         const data = await login(req.body);
         return res.status(200).json(data);
-      }
-      if (action === "register") {
-        const data = await register(req.body);
-        return res.status(201).json(data);
       }
     }
 
