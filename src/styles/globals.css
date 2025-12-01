@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+li {
+  @apply text-foreground
+}
+
+.info-row {
+  @apply flex gap-4 w-full justify-start
+}
+
+.info-row-title {
+  @apply font-semibold w-48 shrink-0
+}
+
+.info-row-content {
+  @apply grow font-light flex
+}
