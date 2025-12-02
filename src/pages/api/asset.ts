@@ -3,25 +3,116 @@ import { ApiError } from "./../../utils/classes";
 import { getClient } from "@/utils/db";
 import { Asset } from "@/utils/types";
 
+const baseSelectSql = `
+SELECT
+  A.ID,
+  A.NAME,
+  A.DESCRIPTION,
+  A.SERIAL_NUMBER,
+  A.CATEGORY_ID,
+  C.NAME CATEGORY,
+  A.PURCHASE_DATE,
+  A.COST,
+  A.DEPARTMENT_ID,
+  D.NAME DEPARTMENT,
+  A.USER_ID,
+  CASE
+    WHEN U.SALUTATION <> '' THEN U.SALUTATION || '. '
+    ELSE ''
+  END ||
+  CASE
+    WHEN U.FIRSTNAME <> '' THEN U.FIRSTNAME || ' '
+    ELSE ''
+  END ||
+  CASE
+    WHEN U.OTHERNAMES <> '' THEN U.OTHERNAMES || ' '
+    ELSE ''
+  END ||
+  CASE
+    WHEN U.LASTNAME <> '' THEN U.LASTNAME || ' '
+    ELSE ''
+  END USER,
+  A.DELETED
+FROM
+  ASSET.ASSET A
+LEFT JOIN
+  ASSET.CATEGORY C
+ON
+  A.CATEGORY_ID = C.ID
+LEFT JOIN
+  ASSET.DEPARTMENT D
+ON
+  A.DEPARTMENT_ID = D.ID
+LEFT JOIN
+  ASSET.USER U
+ON
+  A.USER_ID = U.ID
+`;
+
 async function saveAsset(assetDto: any) {
-  const res = await fetch(`${API_BASE}/save`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeader },
-    body: JSON.stringify(assetDto),
-  });
-  if (!res.ok) throw new ApiError("Asset creation failed", res.status);
-  return res.json();
+  const client = await getClient();
+  const sqlNew: string = `
+  INSERT INTO
+    ASSET.ASSET
+      (
+        NAME,
+        DESCRIPTION,
+        SERIAL_NUMBER,
+        CATEGORY_ID,
+        PURCHASE_DATE,
+        COST,
+        DEPARTMENT_ID,
+        USER_ID,
+        DELETED
+      )
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
+
+  const sqlEdit: string = `
+  UPDATE
+    ASSET.ASSET
+  SET
+    NAME=$1,
+    DESCRIPTION=$2,
+    SERIAL_NUMBER=$3,
+    CATEGORY_ID=$4,
+    PURCHASE_DATE=$5,
+    COST=$6,
+    DEPARTMENT_ID=$7,
+    USER_ID=$8,
+    DELETED=$9
+  WHERE
+    ID = $10`;
+
+  let params: any[] = [
+    assetDto.name,
+    assetDto.description,
+    assetDto.serial_number,
+    assetDto.category_id,
+    assetDto.purchase_date,
+    assetDto.cost,
+    assetDto.department_id,
+    assetDto.user_id,
+    assetDto.deleted || false,
+  ];
+  if (!!assetDto.id) {
+    params.push(assetDto.id);
+  }
+
+  try {
+    const result = await client.query(!!assetDto.id ? sqlEdit : sqlNew, params);
+    return result;
+  } catch (error) {
+    throw new ApiError("Saving asset failed: " + error, 500);
+  } finally {
+    await client.end();
+  }
 }
 
 async function getAssets(query: any) {
-  console.log("Here!");
-
   const client = await getClient();
-  const sql: string =
-    "SELECT ID, NAME, DESCRIPTION, SERIAL_NUMBER, CATEGORY_ID, PURCHASE_DATE, COST, DEPARTMENT_ID, USER_ID, DELETED FROM ASSET.ASSET ORDER BY " +
-    query.sort +
-    " " +
-    query.direction;
+  const sql: string = `${baseSelectSql}
+  ORDER BY
+    ${query.sort} ${query.direction}`;
 
   try {
     const result = await client.query(sql);
@@ -36,21 +127,22 @@ async function getAssets(query: any) {
 
 async function getAssetsByFilter(query: any) {
   const client = await getClient();
-  const sql: string =
-    "SELECT ID, NAME, DESCRIPTION, SERIAL_NUMBER, CATEGORY_ID, PURCHASE_DATE, COST, DEPARTMENT_ID, USER_ID, DELETED FROM ASSET.ASSET" +
-    " WHERE NAME ILIKE '%" +
-    query.filter +
-    "%' OR DESCRIPTION ILIKE '%" +
-    query.filter +
-    "%' OR SERIAL_NUMBER ILIKE '%" +
-    query.filter +
-    "%' OR PURCHASE_DATE ILIKE '%" +
-    query.filter +
-    "%'";
-  " ORDER BY " + query.sort + " " + query.direction;
+  const sql: string = `${baseSelectSql}
+  WHERE
+    A.NAME ILIKE $1
+    OR A.DESCRIPTION ILIKE $1
+    OR A.SERIAL_NUMBER ILIKE $1
+    OR A.PURCHASE_DATE ILIKE $1
+    OR D.NAME ILIKE $1
+    OR U.FIRSTNAME ILIKE $1
+    OR U.OTHERNAMES ILIKE $1
+    OR U.LASTNAME ILIKE $1
+    OR C.NAME ILIKE $1
+  ORDER BY
+    ${query.sort} ${query.direction}`;
 
   try {
-    const result = await client.query(sql);
+    const result = await client.query(sql, [query.filter]);
     const assets: Asset[] = result.rows;
     return assets;
   } catch (error) {
@@ -61,57 +153,56 @@ async function getAssetsByFilter(query: any) {
 }
 
 async function getAssetById(assetId: string) {
-  const params = new URLSearchParams({ id: assetId }).toString();
-  const res = await fetch(`${API_BASE}/view/get/one?` + params, {
-    method: "GET",
-    headers: { "Content-Type": "application/json", ...authHeader },
-  });
-  if (!res.ok) {
-    let backendError = "Fetching asset failed";
-    try {
-      const errorBody = await res.json();
-      backendError = errorBody.message || errorBody.error || backendError;
-    } catch {}
-    throw new ApiError(backendError, res.status);
+  const client = await getClient();
+  const sql: string = `${baseSelectSql}
+  WHERE
+    A.ID = $1`;
+
+  try {
+    const result = await client.query(sql, [assetId]);
+    const asset: Asset = result.rows[0];
+    return asset;
+  } catch (error) {
+    throw new ApiError("Fetching asset failed: " + error, 500);
+  } finally {
+    await client.end();
   }
-  return res.json();
 }
 
-async function getAssetsByExample(exampleDto: any, query: any) {
-  const params = new URLSearchParams();
-  if (query.page) params.append("page", query.page);
-  if (query.size) params.append("size", query.size);
-  if (query.sort) params.append("sortBy", query.sort);
-  if (query.direction) params.append("sortDir", query.direction);
-  if (query.filter) params.append("filter", query.filter);
+async function getAssetsByExample(exampleDto: Asset, query: any) {
+  const client = await getClient();
+  const whereClauses: string[] = [];
+  const params: any[] = [];
+  let paramIndex = 1;
 
-  const res = await fetch(
-    `${API_BASE}/view/get/all/by/example?${params.toString()}`,
-    {
-      method: "GET",
-      headers: { "Content-Type": "application/json", ...authHeader },
-      body: JSON.stringify(exampleDto),
-    }
-  );
-  if (!res.ok)
-    throw new ApiError("Fetching assets by example failed", res.status);
-  return res.json();
-}
-
-async function changePassword(passwordDto: any) {
-  const res = await fetch(`${API_BASE}/change-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeader },
-    body: JSON.stringify(passwordDto),
-  });
-  if (!res.ok) {
-    const response = await res.json();
-    throw new ApiError(
-      response?.message || response?.error || "Password change failed",
-      res.status
-    );
+  if (exampleDto) {
+    Object.entries(exampleDto).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        whereClauses.push(`A.${key} = $${paramIndex}`);
+        params.push(value);
+        paramIndex++;
+      }
+    });
   }
-  return res;
+
+  const whereSql =
+    whereClauses.length > 0 ? ` WHERE ${whereClauses.join(" AND ")}` : "";
+
+  const orderSql = query?.sort
+    ? ` ORDER BY ${query.sort} ${query.direction ?? "ASC"}`
+    : "";
+
+  const sql = `${baseSelectSql} ${whereSql} ${orderSql}`;
+
+  try {
+    const result = await client.query(sql, params);
+    const assets: Asset[] = result.rows;
+    return assets;
+  } catch (error) {
+    throw new ApiError("Fetching assets failed: " + error, 500);
+  } finally {
+    await client.end();
+  }
 }
 
 export default async function handler(
@@ -120,19 +211,14 @@ export default async function handler(
 ) {
   try {
     const { action, assetId } = req.query;
-    const authHeader = getAuthHeader(req);
 
     if (req.method === "POST") {
       if (action === "save") {
-        const data = await saveAsset(req.body, authHeader);
+        const data = await saveAsset(req.body);
         return res.status(201).json(data);
       }
       if (action === "example") {
-        const data = await getAssetsByExample(req.body, authHeader, req.query);
-        return res.status(200).json(data);
-      }
-      if (action === "change-password") {
-        const data = await changePassword(req.body, authHeader);
+        const data = await getAssetsByExample(req.body, req.query);
         return res.status(200).json(data);
       }
     }
@@ -143,7 +229,7 @@ export default async function handler(
         return res.status(200).json(data);
       }
       if (action === "one" && assetId) {
-        const data = await getAssetById(assetId as string, authHeader);
+        const data = await getAssetById(assetId as string);
         return res.status(200).json(data);
       }
       if (action === "filtered") {

@@ -47,7 +47,7 @@ async function getDepartments(query: any) {
   FROM
     ASSET.CATEGORY
   ORDER BY
-    ${query.sort} ${query.direction}`;
+    ${query.sort || 'ID'} ${query.direction || 'DESC'}`;
 
   try {
     const result = await client.query(sql);
@@ -71,7 +71,7 @@ async function getDepartmentsByFilter(query: any) {
   WHERE 
     NAME ILIKE $1
   ORDER BY
-    ${query.sort} ${query.direction}`;
+    ${query.sort || 'ID'} ${query.direction || 'DESC'}`;
 
   try {
     const result = await client.query(sql, [query.filter]);
@@ -114,6 +114,8 @@ async function getDepartmentsByExample(exampleDto: Department, query: any) {
     NAME
   FROM
     ASSET.CATEGORY
+  ORDER BY
+    ${query.sort || 'ID'} ${query.direction || 'DESC'}
   `;
   const whereClauses: string[] = [];
   const params: any[] = [];
@@ -133,7 +135,7 @@ async function getDepartmentsByExample(exampleDto: Department, query: any) {
     whereClauses.length > 0 ? ` WHERE ${whereClauses.join(" AND ")}` : "";
 
   const orderSql = query?.sort
-    ? ` ORDER BY ${query.sort} ${query.direction ?? "ASC"}`
+    ? ` ORDER BY ${query.sort || 'ID'} ${query.direction || 'DESC'}`
     : "";
 
   const sql = `${baseSql} ${whereSql} ${orderSql}`;

@@ -66,11 +66,14 @@ export type Asset = {
   name: string;
   description: string;
   serial_number: string;
-  category_id: string;
+  category_id: number;
+  category?: string;
   purchase_date: Date;
   cost: number;
   department_id: number;
+  department?: string;
   user_id: number;
+  user?: string;
   deleted: boolean;
 };
 

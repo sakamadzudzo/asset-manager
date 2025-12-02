@@ -96,17 +96,17 @@ export function useUserById(userId: string | undefined) {
 }
 
 export function useUsersByExample(exampleDto: any) {
-  const token = useSelector((state: RootState) => state.auth.token);
+  const user: any = useSelector((state: RootState) => state.auth.user);
   const key =
-    exampleDto && token
-      ? [`/api/user?action=example`, exampleDto, token]
+    exampleDto && user.loggedIn
+      ? [`/api/user?action=example`, exampleDto, user.loggedIn]
       : null;
-  const fetcherWithBody = async ([url, body, token]: [string, any, string]) => {
+  const fetcherWithBody = async ([url, body]: [string, any, string]) => {
     const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(user.loggedIn ? { Authorization: `Bearer ${user.loggedIn}` } : {}),
       },
       body: JSON.stringify(body),
     });
@@ -120,8 +120,8 @@ export function useUsersByExample(exampleDto: any) {
   };
   const { data, error, mutate } = useSWR(key, fetcherWithBody);
   return {
-    users: data as Page<UserView>,
-    isLoading: !!exampleDto && !!token && !error && !data,
+    users: data as User[],
+    isLoading: !!exampleDto && !!user.loggedIn && !error && !data,
     isError: error,
     mutate,
   };

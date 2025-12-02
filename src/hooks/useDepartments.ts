@@ -50,14 +50,16 @@ export function useDepartmentsAllByFilter({
   filter?: string;
 }) {
   const user: any = useSelector((state: RootState) => state.auth.user);
-  const shouldFetch = department && department.loggedIn;
+  const shouldFetch = user && user.loggedIn;
   const params = new URLSearchParams({
     sort: sort ? `${sort}` : "",
     direction: direction || "DESC",
     filter: filter || "",
   });
   const { data, error, mutate } = useSWR(
-    shouldFetch ? [`/api/department?action=filtered&${params.toString()}`] : null,
+    shouldFetch
+      ? [`/api/department?action=filtered&${params.toString()}`]
+      : null,
     ([url]) => fetcherWithAuth(url)
   );
   return {
@@ -72,7 +74,9 @@ export function useDepartmentById(departmentId: string | undefined) {
   const user: any = useSelector((state: RootState) => state.auth.user);
   const shouldFetch = !!departmentId && user && user.loggedIn;
   const { data, error, mutate } = useSWR(
-    shouldFetch ? [`/api/department?action=one&departmentId=${departmentId}`] : null,
+    shouldFetch
+      ? [`/api/department?action=one&departmentId=${departmentId}`]
+      : null,
     ([url]) => fetcherWithAuth(url)
   );
 
@@ -96,17 +100,16 @@ export function useDepartmentById(departmentId: string | undefined) {
 }
 
 export function useDepartmentsByExample(exampleDto: any) {
-  const token = useSelector((state: RootState) => state.auth.token);
+  const user: any = useSelector((state: RootState) => state.auth.user);
   const key =
-    exampleDto && token
-      ? [`/api/department?action=example`, exampleDto, token]
+    exampleDto && user.loggedIn
+      ? [`/api/department?action=example`, exampleDto, user.loggedIn]
       : null;
-  const fetcherWithBody = async ([url, body, token]: [string, any, string]) => {
+  const fetcherWithBody = async ([url, body]: [string, any, string]) => {
     const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(body),
     });
@@ -120,8 +123,8 @@ export function useDepartmentsByExample(exampleDto: any) {
   };
   const { data, error, mutate } = useSWR(key, fetcherWithBody);
   return {
-    departments: data as Page<DepartmentView>,
-    isLoading: !!exampleDto && !!token && !error && !data,
+    departments: data as Department[],
+    isLoading: !!exampleDto && !!user.loggedIn && !error && !data,
     isError: error,
     mutate,
   };

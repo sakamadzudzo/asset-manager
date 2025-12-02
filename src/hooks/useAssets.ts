@@ -1,8 +1,8 @@
 import useSWR from "swr";
 import { useSelector } from "react-redux";
 import { ApiError, Page } from "../utils/classes";
-import { RootState } from "../store/store"; // Adjust path if needed
-import { Category } from "@/utils/types";
+import { RootState } from "./../store/store"; // Adjust path if needed
+import { Asset } from "@/utils/types";
 
 const fetcherWithAuth = (url: string) =>
   fetch(url).then(async (res) => {
@@ -15,7 +15,7 @@ const fetcherWithAuth = (url: string) =>
     return res.json();
   });
 
-export function useCategorysAll({
+export function useAssetsAll({
   sort,
   direction,
 }: {
@@ -29,18 +29,18 @@ export function useCategorysAll({
     direction: direction || "DESC",
   });
   const { data, error, mutate } = useSWR(
-    shouldFetch ? [`/api/category?action=all&${params.toString()}`] : null,
+    shouldFetch ? [`/api/asset?action=all&${params.toString()}`] : null,
     ([url]) => fetcherWithAuth(url)
   );
   return {
-    categorys: data as Category[],
+    assets: data as Asset[],
     isLoading: shouldFetch && !error && !data,
     isError: error,
     mutate,
   };
 }
 
-export function useCategorysAllByFilter({
+export function useAssetsAllByFilter({
   sort,
   direction,
   filter,
@@ -57,22 +57,26 @@ export function useCategorysAllByFilter({
     filter: filter || "",
   });
   const { data, error, mutate } = useSWR(
-    shouldFetch ? [`/api/category?action=filtered&${params.toString()}`] : null,
+    shouldFetch
+      ? [`/api/asset?action=filtered&${params.toString()}`]
+      : null,
     ([url]) => fetcherWithAuth(url)
   );
   return {
-    categorys: data as Category[],
+    assets: data as Asset[],
     isLoading: shouldFetch && !error && !data,
     isError: error,
     mutate,
   };
 }
 
-export function useCategoryById(categoryId: string | undefined) {
+export function useAssetById(assetId: string | undefined) {
   const user: any = useSelector((state: RootState) => state.auth.user);
-  const shouldFetch = !!categoryId && user && user.loggedIn;
+  const shouldFetch = !!assetId && user && user.loggedIn;
   const { data, error, mutate } = useSWR(
-    shouldFetch ? [`/api/category?action=one&categoryId=${categoryId}`] : null,
+    shouldFetch
+      ? [`/api/asset?action=one&assetId=${assetId}`]
+      : null,
     ([url]) => fetcherWithAuth(url)
   );
 
@@ -86,7 +90,7 @@ export function useCategoryById(categoryId: string | undefined) {
   }
 
   return {
-    category: data as Category,
+    asset: data as Asset,
     isLoading: shouldFetch && !error && !data,
     isError: !!error,
     errorMessage,
@@ -95,17 +99,17 @@ export function useCategoryById(categoryId: string | undefined) {
   };
 }
 
-export function useCategorysByExample(exampleDto: any) {
-  const user:any = useSelector((state: RootState) => state.auth.user);
+export function useAssetsByExample(exampleDto: any) {
+  const user: any = useSelector((state: RootState) => state.auth.user);
   const key =
     exampleDto && user.loggedIn
-      ? [`/api/category?action=example`, exampleDto, user.loggedIn]
+      ? [`/api/asset?action=example`, exampleDto, user.loggedIn]
       : null;
   const fetcherWithBody = async ([url, body]: [string, any, string]) => {
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
@@ -119,18 +123,18 @@ export function useCategorysByExample(exampleDto: any) {
   };
   const { data, error, mutate } = useSWR(key, fetcherWithBody);
   return {
-    categorys: data as Category[],
+    assets: data as Asset[],
     isLoading: !!exampleDto && !!user.loggedIn && !error && !data,
     isError: error,
     mutate,
   };
 }
 
-export function useSaveCategory() {
+export function useSaveAsset() {
   const principal = useSelector((state: RootState) => state.auth.user);
 
-  const saveCategory = async (
-    category: Category,
+  const saveAsset = async (
+    asset: Asset,
     incrementLoading: () => void,
     decrementLoading: () => void,
     onSuccess?: () => void,
@@ -140,18 +144,18 @@ export function useSaveCategory() {
 
     let result = null;
     try {
-      const res = await fetch("/api/category?action=save", {
+      const res = await fetch("/api/asset?action=save", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(category),
+        body: JSON.stringify(asset),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        const err = data.error || "Updating category failed";
+        const err = data.error || "Updating asset failed";
         const code = res.status || 500;
         onError?.(err, code);
         result = { success: false, error: err, statusCode: code };
@@ -174,5 +178,5 @@ export function useSaveCategory() {
     return result;
   };
 
-  return { saveCategory };
+  return { saveAsset };
 }
