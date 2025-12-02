@@ -21,15 +21,16 @@ async function saveDepartment(departmentDto: any) {
   WHERE
     ID = $2`;
 
-  let params: any[] = [
-    departmentDto.name
-  ];
+  let params: any[] = [departmentDto.name];
   if (!!departmentDto.id) {
     params.push(departmentDto.id);
   }
 
   try {
-    const result = await client.query(!!departmentDto.id ? sqlEdit : sqlNew, params);
+    const result = await client.query(
+      !!departmentDto.id ? sqlEdit : sqlNew,
+      params
+    );
     return result;
   } catch (error) {
     throw new ApiError("Saving department failed: " + error, 500);
@@ -47,7 +48,7 @@ async function getDepartments(query: any) {
   FROM
     ASSET.DEPARTMENT
   ORDER BY
-    ${query.sort} ${query.direction}`;
+    ${query.sort || "ID"} ${query.direction || "DESC"}`;
 
   try {
     const result = await client.query(sql);

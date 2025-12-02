@@ -82,3 +82,27 @@ export const getUserFullname = (user: User) => {
         .filter(Boolean)
         .join(" ");
 };
+
+export const passwordRegex =
+  // eslint-disable-next-line no-useless-escape
+  /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+export const passwordError =
+  "Password must be at least 8 characters, with uppercase, lowercase, number, and symbol.";
+
+export const usernameRegex = /^(?!\s*$)[-_a-zA-Z0-9 ]*$/;
+
+export const usernameError =
+  "Username should only contain letters, digits, dash, or underscore";
+
+export const emailRegex =
+  /^[\w.!#$%&'*+/=?^`{|}~-]+@[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?(?:\.[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?)+$/i;
+
+export const emailError =
+  "Please enter a valid email address (e.g. name@example.com)";
+
+export const phoneNumberRegex =
+  /^\+?[0-9]{1,4}?[-.\s]?\(?[0-9]{1,3}?\)?[-.\s]?[0-9]{3,4}[-.\s]?[0-9]{3,4}$/;
+
+export const phoneNumberError =
+  "Phone number must contain digits, and may include +, spaces, or dashes";

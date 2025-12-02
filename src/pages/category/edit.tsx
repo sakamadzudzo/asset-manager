@@ -2,8 +2,8 @@ import EditFormWrapper from "@/components/EditFormWrapper";
 import InlineError from "@/components/InlineError";
 import { useSaveCategory, useCategoryById } from "@/hooks/useCategorys";
 import { RootState } from "@/store/store";
-import { Errors, Role, Salutation, Category } from "@/utils/types";
-import { Form, Button, Input, Select, SelectItem, Switch } from "@heroui/react";
+import { Errors, Category } from "@/utils/types";
+import { Form, Button, Input } from "@heroui/react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/router";
 import React, { useEffect } from "react";
@@ -19,19 +19,24 @@ export default function CategoryEdit({
 }) {
   const searchParams = useSearchParams();
   const id: string | null = searchParams.get("id");
-  const principal = useSelector((state: any) => state.auth.category);
+  const principal = useSelector((state: any) => state.auth.user);
   const [isAdmin, setIsAdmin] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [errors, setErrors] = React.useState<Errors<Category, string>>(
     {} as Errors<Category, string>
   );
   const [statusCode, setStatusCode] = React.useState(0);
-  const [category, setCategory] = React.useState<Category>({} as Category);
+  const [fetchStarted, setFetchStarted] = React.useState(false);
+  const [category, setCategory] = React.useState<Category>(
+    {} as Category
+  );
   const token = useSelector((state: RootState) => state.auth.token);
   const router = useRouter();
-  const { category: oldCategory, isLoading, isError } = useCategoryById(id!);
-  const [updatePassword, setUpdatePassword] = React.useState(false);
-  const [updateCategoryname, setUpdateCategoryname] = React.useState(false);
+  const {
+    category: oldCategory,
+    isLoading,
+    isError,
+  } = useCategoryById(id!);
   const { saveCategory } = useSaveCategory();
 
   const editMsg: React.ReactNode = (
@@ -39,7 +44,9 @@ export default function CategoryEdit({
       <div className="font-bold text-lg w-full flex justify-center">
         Editing category:
       </div>
-      <div className="flex justify-center">Edit information about the category</div>
+      <div className="flex justify-center">
+        Edit information about the category
+      </div>
     </div>
   );
 
@@ -54,6 +61,20 @@ export default function CategoryEdit({
     </div>
   );
 
+  const validate = () => {
+    setErrors({} as Errors<Category, string>);
+    let tempErrors: Errors<Category, string> = {} as Errors<
+      Category,
+      string
+    >;
+
+    if (!category.name || category.name.trim() === "") {
+      tempErrors = { ...tempErrors, name: "Name is required" };
+    }
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
+
   useEffect(() => {
     if (principal) {
       setIsAdmin(principal.roles.includes("ADMIN"));
@@ -65,6 +86,8 @@ export default function CategoryEdit({
     setError(null);
     setStatusCode(0);
     incrementLoading();
+
+    if (!validate()) return;
 
     await saveCategory(
       category,
@@ -83,6 +106,17 @@ export default function CategoryEdit({
     }
   }, [oldCategory]);
 
+  useEffect(() => {
+    if (id && isLoading && !fetchStarted) {
+      setFetchStarted(true);
+      incrementLoading();
+    }
+    if (fetchStarted && !isLoading) {
+      decrementLoading();
+      setFetchStarted(false);
+    }
+  }, [id, isLoading]);
+
   return (
     <EditFormWrapper editMsg={editMsg} newMsg={newMsg} isNew={!id}>
       <Form
@@ -92,18 +126,28 @@ export default function CategoryEdit({
         {error && <InlineError statusCode={statusCode} title={error} />}
         <div className="space-y-4 h-full w-full py-2 overflow-y-auto grow">
           <Input
+            isRequired
             label="Name"
             name="name"
             placeholder="Enter name"
             type="text"
             value={category?.name || ""}
-            onValueChange={(e) => setCategory({ ...category, name: e })}
+            onValueChange={(e) => {
+              setCategory({ ...category, name: e });
+              validate();
+            }}
             size="sm"
             variant="bordered"
+            errorMessage={errors?.name}
+            isInvalid={!!errors?.name}
           />
-          
         </div>
-        <Button type="submit" color="primary" className="w-full px-5">
+        <Button
+          type="submit"
+          onPress={validate}
+          color="primary"
+          className="w-full px-5"
+        >
           Save
         </Button>
       </Form>

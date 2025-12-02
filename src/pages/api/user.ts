@@ -69,23 +69,30 @@ async function getUsers(query: any) {
   const client = await getClient();
   const sql: string = `
   SELECT
-    ID,
-    SALUTATION,
-    FIRSTNAME,
-    OTHERNAMES,
-    LASTNAME,
-    ROLES,
-    EMAIL,
-    PHONE,
-    USERNAME,
-    PASSWORD
+    U.ID,
+    U.SALUTATION,
+    U.FIRSTNAME,
+    U.OTHERNAMES,
+    U.LASTNAME,
+    U.ROLES,
+    U.EMAIL,
+    U.PHONE,
+    U.USERNAME,
+    U.PASSWORD,
+    U.DEPARTMENT_ID,
+    D.NAME DEPARTMENT
   FROM
-    ASSET.USER
+    ASSET.USER U
+  LEFT JOIN
+    ASSET.DEPARTMENT D
+  ON
+    U.DEPARTMENT_ID = D.ID
   ORDER BY
     ${query.sort} ${query.direction}`;
 
   try {
     const result = await client.query(sql);
+    console.log(result);
     const users: User[] = result.rows;
     return users;
   } catch (error) {
@@ -99,18 +106,24 @@ async function getUsersByFilter(query: any) {
   const client = await getClient();
   const sql: string = `
   SELECT
-    ID,
-    SALUTATION,
-    FIRSTNAME,
-    OTHERNAMES,
-    LASTNAME,
-    ROLES,
-    EMAIL,
-    PHONE,
-    USERNAME,
-    PASSWORD
+    U.ID,
+    U.SALUTATION,
+    U.FIRSTNAME,
+    U.OTHERNAMES,
+    U.LASTNAME,
+    U.ROLES,
+    U.EMAIL,
+    U.PHONE,
+    U.USERNAME,
+    U.PASSWORD,
+    U.DEPARTMENT_ID,
+    D.NAME DEPARTMENT
   FROM
-    ASSET.USER
+    ASSET.USER U
+  LEFT JOIN
+    ASSET.DEPARTMENT D
+  ON
+    U.DEPARTMENT_ID = D.ID
   WHERE 
     FIRSTNAME ILIKE $1
     OR OTHERNAMES ILIKE $1
@@ -136,20 +149,26 @@ async function getUserById(userId: string) {
   const client = await getClient();
   const sql: string = `
   SELECT
-      ID,
-      SALUTATION,
-      FIRSTNAME,
-      OTHERNAMES,
-      LASTNAME,
-      ROLES,
-      EMAIL,
-      PHONE,
-      USERNAME,
-      PASSWORD
-    FROM
-      ASSET.USER
-    WHERE
-      ID = $1`;
+    U.ID,
+    U.SALUTATION,
+    U.FIRSTNAME,
+    U.OTHERNAMES,
+    U.LASTNAME,
+    U.ROLES,
+    U.EMAIL,
+    U.PHONE,
+    U.USERNAME,
+    U.PASSWORD,
+    U.DEPARTMENT_ID,
+    D.NAME DEPARTMENT
+  FROM
+    ASSET.USER U
+  LEFT JOIN
+    ASSET.DEPARTMENT D
+  ON
+    U.DEPARTMENT_ID = D.ID
+  WHERE
+    U.ID = $1`;
 
   try {
     const result = await client.query(sql, [userId]);
@@ -166,18 +185,24 @@ async function getUsersByExample(exampleDto: User, query: any) {
   const client = await getClient();
   const baseSql: string = `
   SELECT
-    ID,
-    SALUTATION,
-    FIRSTNAME,
-    OTHERNAMES,
-    LASTNAME,
-    ROLES,
-    EMAIL,
-    PHONE,
-    USERNAME,
-    PASSWORD
+    U.ID,
+    U.SALUTATION,
+    U.FIRSTNAME,
+    U.OTHERNAMES,
+    U.LASTNAME,
+    U.ROLES,
+    U.EMAIL,
+    U.PHONE,
+    U.USERNAME,
+    U.PASSWORD,
+    U.DEPARTMENT_ID,
+    D.NAME DEPARTMENT
   FROM
-    ASSET.USER
+    ASSET.USER U
+LEFT JOIN
+	ASSET.DEPARTMENT D
+ON
+	U.DEPARTMENT_ID = D.ID
   `;
   const whereClauses: string[] = [];
   const params: any[] = [];

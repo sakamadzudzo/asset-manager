@@ -26,52 +26,16 @@ export default function Navbar_Staff({
 
   useEffect(() => {
     const genralItems: MyDropdown[] = [
-      {
-        label: "Subjects",
-        dropdown: [
-          { label: "All", href: "/subject/all", className: "" },
-          { label: " Subject Years", href: "/subject/year/all", className: "" },
-        ],
-      },
+      { label: "Assets", href: "/asset/all" },
+      { label: "Categories", href: "/category/all" },
+      { label: "Departments", href: "/department/all" },
     ];
 
-    const protectedItems: MyDropdown[] = [
-      { label: "Teachers", href: "/teacher/all", className: "" },
-      { label: "Users", href: "/user/all", className: "" },
-    ];
-
-    const reportItems: MyDropdown[] = [
-      {
-        label: "Reports",
-        dropdown: [
-          {
-            label: "Report 1",
-            href: "/reports/report-1",
-            className: "",
-          },
-          {
-            label: "Report 2",
-            href: "/reports/report-1",
-            className: "",
-          },
-          {
-            label: "Report 3",
-            href: "/reports/report-1",
-            className: "",
-          },
-          {
-            label: "Report 4",
-            href: "/reports/report-1",
-            className: "",
-          },
-        ],
-      },
-    ];
+    const adminItems: MyDropdown[] = [{ label: "Users", href: "/user/all" }];
 
     const rawItems: MyDropdown[] = [
       ...genralItems,
-      ...(user?.roles?.includes("ADMIN") ? protectedItems : []),
-      ...reportItems,
+      ...(user?.roles?.includes("ADMIN") ? adminItems : []),
     ];
 
     setRawMenuItems(rawItems);

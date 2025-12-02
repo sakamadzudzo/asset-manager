@@ -48,16 +48,17 @@ export type DashboardInfo = {
 
 export type User = {
   id: number;
-  salutation: Salutation;
-  firstname: string;
+  salutation?: Salutation;
+  firstname?: string;
   othernames?: string;
   lastname: string;
   email: string;
   username: string;
   roles: Role[];
-  phone: string;
+  phone?: string;
   department_id: number;
-  loggedIn: boolean;
+  loggedIn?: boolean;
+  department?: string;
 };
 
 export type Asset = {

@@ -115,6 +115,11 @@ export default function AllUsersPage() {
         allowsSorting: true,
       },
       {
+        key: "department",
+        label: "Department",
+        allowsSorting: true,
+      },
+      {
         key: "id",
         label: "ID",
         allowsSorting: true,
