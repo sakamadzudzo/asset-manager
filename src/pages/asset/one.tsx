@@ -24,6 +24,8 @@ import {
 import React from "react";
 import useToastError from "@/hooks/toasts/ToastError";
 import { useRouter } from "next/router";
+import { useSelector } from "react-redux";
+import { Role, User } from "@/utils/types";
 
 export default function OneAssetPage({
   incrementLoading,
@@ -43,6 +45,7 @@ export default function OneAssetPage({
   const { saveAsset } = useSaveAsset();
   const router = useRouter();
   const loadingRef = React.useRef(false);
+  const user: User = useSelector((state: any) => state.auth.user);
 
   const deleteAsset = async () => {
     await saveAsset(
@@ -79,13 +82,15 @@ export default function OneAssetPage({
   return (
     <div className="grow overflow-auto">
       <div aria-label="Page buttons" className="w-full flex justify-end gap-4">
-        <Button
-          color="danger"
-          endContent={<XIcon weight="thin" size={34} />}
-          onPress={onOpen}
-        >
-          Delete
-        </Button>
+        {user?.roles?.includes(Role.ADMIN) && (
+          <Button
+            color="danger"
+            endContent={<XIcon weight="thin" size={34} />}
+            onPress={onOpen}
+          >
+            Delete
+          </Button>
+        )}
         <Button
           as={Link}
           color="primary"

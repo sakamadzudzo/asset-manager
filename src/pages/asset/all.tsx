@@ -19,6 +19,8 @@ import {
 } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { Role, User } from "@/utils/types";
 
 export default function AllAssetsPage() {
   const [total, setTotal] = React.useState(1);
@@ -32,6 +34,7 @@ export default function AllAssetsPage() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { saveAsset } = useSaveAsset();
   const router = useRouter();
+  const user: User = useSelector((state: any) => state.auth.user);
 
   let assets;
   let isLoading;
@@ -97,14 +100,8 @@ export default function AllAssetsPage() {
 
   const rows = React.useMemo(() => {
     if (!assets) return [];
-    return (assets || []).map((row: any) => ({
-      ...row,
-      key: row.id || row._id || row.name,
-      purchase_date: formatDate(row.purchase_date, false),
-      department: row.department?.name || "",
-      user: getUserFullname(row.user) || "",
-      category: row.category?.name || "",
-      actions: [
+    return (assets || []).map((row: any) => {
+      const actions = [
         {
           label: "View",
           function: () => viewOne(row.id),
@@ -115,14 +112,25 @@ export default function AllAssetsPage() {
           function: () => editOne(row.id),
           key: `edit-${row.id}`,
         },
-        {
+      ];
+      if (user?.roles?.includes(Role.ADMIN)) {
+        actions.push({
           label: "Delete",
           function: () => deleteOne(row),
           key: `delete-${row.id}`,
-        },
-      ],
-    }));
-  }, [assets]);
+        });
+      }
+      return {
+        ...row,
+        key: row.id || row._id || row.name,
+        purchase_date: formatDate(row.purchase_date, false),
+        department: row.department?.name || "",
+        user: getUserFullname(row.user) || "",
+        category: row.category?.name || "",
+        actions,
+      };
+    });
+  }, [assets, user]);
 
   const columns = React.useMemo<Column[]>(
     () => [
