@@ -51,10 +51,13 @@ async function getAssets(query: any, req: NextApiRequest) {
   const userId = isUserRestricted(req);
 
   try {
-    let client = supabase.from("asset").select(
-      `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
+    let client = supabase
+      .from("asset")
+      .select(
+        `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
         category(name), department(name), user(salutation, firstname, othernames, lastname)`
-    );
+      )
+      .neq("deleted", true);
 
     if (userId) {
       client = client.eq("user_id", userId);
@@ -84,7 +87,8 @@ async function getAssetsByFilter(query: any, req: NextApiRequest) {
       )
       .or(
         `name.ilike.%${query.filter}%,description.ilike.%${query.filter}%,serial_number.ilike.%${query.filter}%`
-      );
+      )
+      .neq("deleted", true);
 
     if (userId) {
       client = client.eq("user_id", userId);
@@ -112,7 +116,8 @@ async function getAssetById(assetId: string, req: NextApiRequest) {
         `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
         category(name), department(name), user(salutation, firstname, othernames, lastname)`
       )
-      .eq("id", assetId);
+      .eq("id", assetId)
+      .neq("deleted", true);
 
     if (userId) {
       client = client.eq("user_id", userId);
@@ -136,10 +141,13 @@ async function getAssetsByExample(
   const userId = isUserRestricted(req);
 
   try {
-    let client = supabase.from("asset").select(
-      `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
+    let client = supabase
+      .from("asset")
+      .select(
+        `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
         category(name), department(name), user(salutation, firstname, othernames, lastname)`
-    );
+      )
+      .neq("deleted", true);
 
     if (exampleDto) {
       Object.entries(exampleDto).forEach(([key, value]) => {

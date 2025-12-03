@@ -20,6 +20,7 @@ function AppContent({
   decrementLoading,
   saveDarkMode,
   loading,
+  resetLoading,
 }: any) {
   const { user } = useSelector((state: any) => state.auth);
   const dispatch = useDispatch();
@@ -92,6 +93,7 @@ function AppContent({
         {...pageProps}
         incrementLoading={incrementLoading}
         decrementLoading={decrementLoading}
+        resetLoading={resetLoading}
         isAuthenticated={isAuthenticated}
       />
     </main>
@@ -113,6 +115,10 @@ export default function App({ Component, pageProps }: AppProps) {
   const saveDarkMode = (darkMode: boolean) => {
     setDarkMode(darkMode);
     window.localStorage.setItem("darkMode", darkMode.toString());
+  };
+
+  const resetLoading = () => {
+    setLoading(0);
   };
 
   React.useEffect(() => {
@@ -144,6 +150,7 @@ export default function App({ Component, pageProps }: AppProps) {
           decrementLoading={decrementLoading}
           saveDarkMode={saveDarkMode}
           loading={loading !== 0}
+          resetLoading={resetLoading}
         />
       </Provider>
     </HeroUIProvider>

@@ -84,6 +84,33 @@ export default function AssetEdit({
     if (!asset.name || asset.name.trim() === "") {
       tempErrors = { ...tempErrors, name: "Name is required" };
     }
+    if (!asset.serial_number || asset.serial_number.trim() === "") {
+      tempErrors = {
+        ...tempErrors,
+        serial_number: "Serial number is required",
+      };
+    }
+    if (!asset.category_id) {
+      tempErrors = { ...tempErrors, category_id: "Category is required" };
+    }
+    if (!asset.purchase_date) {
+      tempErrors = {
+        ...tempErrors,
+        purchase_date: {
+          ...tempErrors.purchase_date,
+          general: "Purchase date is required",
+        },
+      };
+    }
+    if (!asset.cost || asset.cost <= 0) {
+      tempErrors = {
+        ...tempErrors,
+        cost: "Cost is required and must be greater than 0",
+      };
+    }
+    if (!asset.department_id) {
+      tempErrors = { ...tempErrors, department_id: "Department is required" };
+    }
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
@@ -163,7 +190,6 @@ export default function AssetEdit({
             isInvalid={!!errors?.name}
           />
           <Textarea
-            isRequired
             label="Description"
             name="description"
             placeholder="Enter description"
@@ -216,6 +242,7 @@ export default function AssetEdit({
             ))}
           </Autocomplete>
           <Input
+            isRequired
             label="Purchase date"
             name="purchase_date"
             placeholder="Enter purchase date"
@@ -228,7 +255,7 @@ export default function AssetEdit({
                 : ""
             }
             errorMessage={errors?.purchase_date?.general}
-            isInvalid={!!errors?.purchase_date}
+            isInvalid={!!errors?.purchase_date?.general}
             onValueChange={(e) => {
               setAsset({ ...asset, purchase_date: new Date(e) });
             }}

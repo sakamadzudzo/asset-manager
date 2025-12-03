@@ -61,3 +61,4 @@ You are free to use other cloud hosting providers which can provide the same fun
 - Generate asset tag from asset details
 - Add profile
 - Add settings
+- Set up different brances for different stages e.g. dev, staging, production

@@ -1,10 +1,16 @@
-import { useAssetById } from "@/hooks/useAssets";
+import { useAssetById, useSaveAsset } from "@/hooks/useAssets";
 import {
   Accordion,
   AccordionItem,
   Button,
   Link,
   Spacer,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
 } from "@heroui/react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -13,23 +19,42 @@ import {
   TagIcon,
   CurrencyDollarIcon,
   CalendarIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import React from "react";
 import useToastError from "@/hooks/toasts/ToastError";
+import { useRouter } from "next/router";
 
 export default function OneAssetPage({
   incrementLoading,
   decrementLoading,
+  resetLoading,
 }: {
   incrementLoading: () => void;
   decrementLoading: () => void;
+  resetLoading: () => void;
 }) {
   const searchParams = useSearchParams();
   const id: string | null = searchParams.get("id");
   const { asset, isLoading, isError, errorMessage, statusCode } = useAssetById(
     id!
   );
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const { saveAsset } = useSaveAsset();
+  const router = useRouter();
   const loadingRef = React.useRef(false);
+
+  const deleteAsset = async () => {
+    await saveAsset(
+      { ...asset, deleted: true },
+      incrementLoading,
+      resetLoading,
+      () => router.push("/asset/all"),
+      (error, statusCode) => {
+        useToastError({ error, statusCode });
+      }
+    );
+  };
 
   React.useEffect(() => {
     if (isLoading && !loadingRef.current) {
@@ -55,6 +80,13 @@ export default function OneAssetPage({
     <div className="grow overflow-auto">
       <div aria-label="Page buttons" className="w-full flex justify-end gap-4">
         <Button
+          color="danger"
+          endContent={<XIcon weight="thin" size={34} />}
+          onPress={onOpen}
+        >
+          Delete
+        </Button>
+        <Button
           as={Link}
           color="primary"
           endContent={<PencilSimpleLineIcon weight="thin" size={34} />}
@@ -63,6 +95,31 @@ export default function OneAssetPage({
           Edit
         </Button>
       </div>
+
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+        <ModalContent className="bg-background text-foreground">
+          <ModalHeader>Confirm Delete</ModalHeader>
+          <ModalBody>
+            <p>Are you sure you want to delete this asset?</p>
+            <p className="text-sm text-gray-500">{asset?.name}</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="default" onPress={() => onOpenChange()}>
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onPress={() => {
+                deleteAsset();
+                onOpenChange();
+              }}
+            >
+              Delete
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <Accordion isCompact={true} defaultExpandedKeys={["1"]}>
         <AccordionItem
           key="1"

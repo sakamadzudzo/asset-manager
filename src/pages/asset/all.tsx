@@ -1,9 +1,22 @@
 import MyTable, { Column } from "@/components/MyTable";
 import useToastError from "@/hooks/toasts/ToastError";
-import { useAssetsAll, useAssetsAllByFilter } from "@/hooks/useAssets";
+import {
+  useAssetsAll,
+  useAssetsAllByFilter,
+  useSaveAsset,
+} from "@/hooks/useAssets";
 import { statuses } from "@/utils/classes";
 import { formatDate, getUserFullname } from "@/utils/helpers";
-import { SortDescriptor } from "@heroui/react";
+import {
+  SortDescriptor,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  useDisclosure,
+} from "@heroui/react";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
@@ -15,20 +28,24 @@ export default function AllAssetsPage() {
   });
   const [filterValue, setFilterValue] = React.useState<string>("");
   const [searchValue, setSearchValue] = React.useState<string>("");
+  const [selectedAsset, setSelectedAsset] = React.useState<any>(null);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const { saveAsset } = useSaveAsset();
   const router = useRouter();
 
   let assets;
   let isLoading;
   let isError;
+  let mutate;
 
   if (searchValue) {
-    ({ assets, isLoading, isError } = useAssetsAllByFilter({
+    ({ assets, isLoading, isError, mutate } = useAssetsAllByFilter({
       sort: sortDescriptor.column.toString(),
       direction: sortDescriptor.direction === "ascending" ? "ASC" : "DESC",
       filter: searchValue,
     }));
   } else {
-    ({ assets, isLoading, isError } = useAssetsAll({
+    ({ assets, isLoading, isError, mutate } = useAssetsAll({
       sort: sortDescriptor.column.toString(),
       direction: sortDescriptor.direction === "ascending" ? "ASC" : "DESC",
     }));
@@ -40,6 +57,32 @@ export default function AllAssetsPage() {
 
   const editOne = (id: string) => {
     router.push(`/asset/edit?id=${id}`);
+  };
+
+  const deleteOne = (asset: any) => {
+    setSelectedAsset(asset);
+    onOpen();
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedAsset) return;
+    try {
+      await saveAsset(
+        { ...selectedAsset, deleted: true },
+        () => {},
+        () => {},
+        () => {
+          onOpenChange();
+          setSelectedAsset(null);
+          mutate();
+        },
+        (error, statusCode) => {
+          useToastError({ error, statusCode });
+        }
+      );
+    } catch (error) {
+      console.error("Delete failed:", error);
+    }
   };
 
   useEffect(() => {
@@ -71,6 +114,11 @@ export default function AllAssetsPage() {
           label: "Edit",
           function: () => editOne(row.id),
           key: `edit-${row.id}`,
+        },
+        {
+          label: "Delete",
+          function: () => deleteOne(row),
+          key: `delete-${row.id}`,
         },
       ],
     }));
@@ -152,20 +200,40 @@ export default function AllAssetsPage() {
   }, [isError]);
 
   return (
-    <MyTable
-      columns={columns}
-      rows={rows}
-      statusOptions={statusOptions}
-      sortDescriptor={sortDescriptor}
-      setSortDescriptor={setSortDescriptor}
-      filterValue={filterValue}
-      setFilterValue={setFilterValue}
-      searchBox={true}
-      search={search}
-      isLoading={isLoading}
-      total={total}
-      onRowAction={viewOne}
-      addFunction={addNew}
-    />
+    <>
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+        <ModalContent className="bg-background text-foreground">
+          <ModalHeader>Confirm Delete</ModalHeader>
+          <ModalBody>
+            <p>Are you sure you want to delete this asset?</p>
+            <p className="text-sm text-gray-500">{selectedAsset?.name}</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="default" onPress={() => onOpenChange()}>
+              Cancel
+            </Button>
+            <Button color="danger" onPress={confirmDelete}>
+              Delete
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <MyTable
+        columns={columns}
+        rows={rows}
+        statusOptions={statusOptions}
+        sortDescriptor={sortDescriptor}
+        setSortDescriptor={setSortDescriptor}
+        filterValue={filterValue}
+        setFilterValue={setFilterValue}
+        searchBox={true}
+        search={search}
+        isLoading={isLoading}
+        total={total}
+        onRowAction={viewOne}
+        addFunction={addNew}
+      />
+    </>
   );
 }
