@@ -27,16 +27,10 @@ export default function CategoryEdit({
   );
   const [statusCode, setStatusCode] = React.useState(0);
   const [fetchStarted, setFetchStarted] = React.useState(false);
-  const [category, setCategory] = React.useState<Category>(
-    {} as Category
-  );
+  const [category, setCategory] = React.useState<Category>({} as Category);
   const token = useSelector((state: RootState) => state.auth.token);
   const router = useRouter();
-  const {
-    category: oldCategory,
-    isLoading,
-    isError,
-  } = useCategoryById(id!);
+  const { category: oldCategory, isLoading, isError } = useCategoryById(id!);
   const { saveCategory } = useSaveCategory();
 
   const editMsg: React.ReactNode = (
@@ -63,10 +57,7 @@ export default function CategoryEdit({
 
   const validate = () => {
     setErrors({} as Errors<Category, string>);
-    let tempErrors: Errors<Category, string> = {} as Errors<
-      Category,
-      string
-    >;
+    let tempErrors: Errors<Category, string> = {} as Errors<Category, string>;
 
     if (!category.name || category.name.trim() === "") {
       tempErrors = { ...tempErrors, name: "Name is required" };
@@ -117,6 +108,10 @@ export default function CategoryEdit({
     }
   }, [id, isLoading]);
 
+  useEffect(() => {
+    validate();
+  }, [category]);
+
   return (
     <EditFormWrapper editMsg={editMsg} newMsg={newMsg} isNew={!id}>
       <Form
@@ -134,7 +129,6 @@ export default function CategoryEdit({
             value={category?.name || ""}
             onValueChange={(e) => {
               setCategory({ ...category, name: e });
-              validate();
             }}
             size="sm"
             variant="bordered"

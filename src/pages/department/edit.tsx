@@ -117,6 +117,10 @@ export default function DepartmentEdit({
     }
   }, [id, isLoading]);
 
+  useEffect(() => {
+    validate();
+  }, [department]);
+
   return (
     <EditFormWrapper editMsg={editMsg} newMsg={newMsg} isNew={!id}>
       <Form
@@ -134,7 +138,6 @@ export default function DepartmentEdit({
             value={department?.name || ""}
             onValueChange={(e) => {
               setDepartment({ ...department, name: e });
-              validate();
             }}
             size="sm"
             variant="bordered"

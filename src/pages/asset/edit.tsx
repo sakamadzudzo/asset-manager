@@ -135,6 +135,10 @@ export default function AssetEdit({
     // eslint-disable-next-line
   }, [id, isLoading, dLoading, cLoading]);
 
+  useEffect(() => {
+    validate();
+  }, [asset]);
+
   return (
     <EditFormWrapper editMsg={editMsg} newMsg={newMsg} isNew={!id}>
       <Form
@@ -152,7 +156,6 @@ export default function AssetEdit({
             value={asset?.name || ""}
             onValueChange={(e) => {
               setAsset({ ...asset, name: e });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -168,7 +171,6 @@ export default function AssetEdit({
             value={asset?.description || ""}
             onValueChange={(e) => {
               setAsset({ ...asset, description: e });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -184,7 +186,6 @@ export default function AssetEdit({
             value={asset?.serial_number || ""}
             onValueChange={(e) => {
               setAsset({ ...asset, serial_number: e });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -206,7 +207,6 @@ export default function AssetEdit({
                 ...asset,
                 category_id: Number(key!),
               });
-              validate();
             }}
           >
             {categorys?.map((category) => (
@@ -231,7 +231,6 @@ export default function AssetEdit({
             isInvalid={!!errors?.purchase_date}
             onValueChange={(e) => {
               setAsset({ ...asset, purchase_date: new Date(e) });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -245,7 +244,6 @@ export default function AssetEdit({
             value={asset?.cost?.toString() || ""}
             onValueChange={(e) => {
               setAsset({ ...asset, cost: Number(e) });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -256,7 +254,7 @@ export default function AssetEdit({
             isRequired
             label="Department"
             name="department"
-            selectedKeys={[asset?.department_id]}
+            selectedKeys={[String(asset?.department_id)]}
             variant="bordered"
             selectionMode="single"
             errorMessage={errors?.department_id}
@@ -266,7 +264,6 @@ export default function AssetEdit({
                 ...asset,
                 department_id: Number(key.currentKey!),
               });
-              validate();
             }}
           >
             {departments?.map((dept) => (

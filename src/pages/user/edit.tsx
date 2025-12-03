@@ -154,6 +154,10 @@ export default function UserEdit({
     // eslint-disable-next-line
   }, [id, isLoading, dLoading]);
 
+  useEffect(() => {
+    validate();
+  }, [user]);
+
   return (
     <EditFormWrapper editMsg={editMsg} newMsg={newMsg} isNew={!id}>
       <Form
@@ -187,7 +191,6 @@ export default function UserEdit({
                   value={user.username || ""}
                   onValueChange={(e) => {
                     setUser({ ...user, username: e });
-                    validate();
                   }}
                   size="sm"
                   variant="bordered"
@@ -221,7 +224,6 @@ export default function UserEdit({
                   value={user.password || ""}
                   onValueChange={(e) => {
                     setUser({ ...user, password: e });
-                    validate();
                   }}
                   size="sm"
                   variant="bordered"
@@ -234,7 +236,7 @@ export default function UserEdit({
           <Select
             label="Salutation"
             name="salutation"
-            selectedKeys={user?.salutation?.valueOf()}
+            selectedKeys={[user?.salutation!]}
             variant="bordered"
             selectionMode="single"
             errorMessage={errors?.salutation}
@@ -244,7 +246,6 @@ export default function UserEdit({
                 ...user,
                 salutation: key.currentKey! as Salutation,
               });
-              validate();
             }}
           >
             {salutations?.map((salutation) => (
@@ -261,7 +262,6 @@ export default function UserEdit({
             value={user?.firstname || ""}
             onValueChange={(e) => {
               setUser({ ...user, firstname: e });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -276,7 +276,6 @@ export default function UserEdit({
             value={user?.othernames || ""}
             onValueChange={(e) => {
               setUser({ ...user, othernames: e });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -292,7 +291,6 @@ export default function UserEdit({
             value={user?.lastname || ""}
             onValueChange={(e) => {
               setUser({ ...user, lastname: e });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -308,7 +306,6 @@ export default function UserEdit({
             value={user?.email || ""}
             onValueChange={(e) => {
               setUser({ ...user, email: e });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -323,7 +320,6 @@ export default function UserEdit({
             value={user?.phone || ""}
             onValueChange={(e) => {
               setUser({ ...user, phone: e });
-              validate();
             }}
             size="sm"
             variant="bordered"
@@ -344,7 +340,6 @@ export default function UserEdit({
                 ...user,
                 roles: Array.from(keys) as Role[],
               });
-              validate();
             }}
           >
             {roles?.map((type) => (
@@ -357,7 +352,7 @@ export default function UserEdit({
             isRequired
             label="Department"
             name="department"
-            selectedKeys={[user?.department_id]}
+            selectedKeys={[String(user?.department_id)]}
             variant="bordered"
             selectionMode="single"
             errorMessage={errors?.department_id}
@@ -367,7 +362,6 @@ export default function UserEdit({
                 ...user,
                 department_id: Number(key.currentKey!),
               });
-              validate();
             }}
           >
             {departments?.map((dept) => (
