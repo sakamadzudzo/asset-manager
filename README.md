@@ -52,3 +52,10 @@ You are free to use other cloud hosting providers which can provide the same fun
 ## Department
 - id
 - name
+
+# Room for improvements
+- Add pagination to asset listing
+- Add security other than just username and password e.g biometric 
+- Encrypt password
+- Add barcode/qr code scanning for serial number 
+- Generate asset tag from asset details
