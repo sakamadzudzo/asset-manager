@@ -13,12 +13,19 @@ async function login(authDto: {
   try {
     const { data, error } = await client
       .from("user")
-      .select("id, salutation, firstname, othernames, lastname, roles, email, phone, username, password, department_id")
+      .select(
+        "id, salutation, firstname, othernames, lastname, roles, email, phone, username, password, department_id"
+      )
       .eq("username", authDto.username)
       .single();
 
+    console.log(error);
+
     if (error || !data) {
-      throw new ApiError("Login failed: User not found", 400);
+      throw new ApiError(
+        `Login failed: ${error?.message || "User not found"}`,
+        400
+      );
     }
     if (data.password !== authDto.password) {
       throw new ApiError("Login failed: Incorrect password", 400);
