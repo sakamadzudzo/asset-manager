@@ -8,40 +8,27 @@ async function login(authDto: {
   password: string;
   rememberMe: boolean;
 }) {
-  const client = await getClient();
-  const sql: string = `
-    SELECT
-      ID,
-      SALUTATION,
-      FIRSTNAME,
-      OTHERNAMES,
-      LASTNAME,
-      ROLES,
-      EMAIL,
-      PHONE,
-      USERNAME,
-      PASSWORD
-    FROM
-      ASSET.USER
-    WHERE
-      USERNAME = $1
-    ORDER BY ID DESC`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sql, [authDto.username]);
-    if (result.rowCount == null || result.rowCount < 1) {
+    const { data, error } = await client
+      .from("user")
+      .select("id, salutation, firstname, othernames, lastname, roles, email, phone, username, password, department_id")
+      .eq("username", authDto.username)
+      .single();
+
+    if (error || !data) {
       throw new ApiError("Login failed: User not found", 400);
     }
-    if (result.rows[0].password !== authDto.password) {
+    if (data.password !== authDto.password) {
       throw new ApiError("Login failed: Incorrect password", 400);
     }
-    const user: User = result.rows[0];
+    const user: User = data;
     user.loggedIn = true;
     return { user: user };
-  } catch (error) {
-    throw new ApiError("Login failed: " + error, 500);
-  } finally {
-    await client.end();
+  } catch (error: any) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError("Login failed: " + error.message, 500);
   }
 }
 

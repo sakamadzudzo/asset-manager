@@ -4,260 +4,138 @@ import { getClient } from "@/utils/db";
 import { User } from "@/utils/types";
 
 async function saveUser(userDto: any) {
-  const client = await getClient();
-  const sqlNew: string = `
-  INSERT INTO
-    ASSET.USER
-      (
-        FIRSTNAME,
-        OTHERNAMES,
-        LASTNAME,
-        SALUTATION,
-        ROLES,
-        EMAIL,
-        PHONE,
-        USERNAME,
-        PASSWORD,
-        DEPARTMENT_ID
-      ) 
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`;
-
-  const sqlEdit: string = `
-  UPDATE
-    ASSET.USER
-  SET
-    FIRSTNAME=$1,
-    OTHERNAMES=$2,
-    LASTNAME=$3,
-    SALUTATION=$4,
-    ROLES=$5,
-    EMAIL=$6,
-    PHONE=$7,
-    USERNAME=$8,
-    PASSWORD=$9,
-    DEPARTMENT_ID=$10
-  WHERE
-    ID = $11`;
-
-  let params: any[] = [
-    userDto.firstname,
-    userDto.othernames,
-    userDto.lastname,
-    userDto.salutation,
-    userDto.rolesString,
-    userDto.email,
-    userDto.phone,
-    userDto.username,
-    userDto.password,
-    userDto.department_id,
-  ];
-  if (!!userDto.id) {
-    params.push(userDto.id);
-  }
+  const client = getClient();
+  const data = {
+    firstname: userDto.firstname,
+    othernames: userDto.othernames,
+    lastname: userDto.lastname,
+    salutation: userDto.salutation,
+    roles: userDto.rolesString,
+    email: userDto.email,
+    phone: userDto.phone,
+    username: userDto.username,
+    password: userDto.password,
+    department_id: userDto.department_id,
+  };
 
   try {
-    const result = await client.query(!!userDto.id ? sqlEdit : sqlNew, params);
-    return result;
-  } catch (error) {
-    throw new ApiError("Saving user failed: " + error, 500);
-  } finally {
-    await client.end();
+    if (userDto.id) {
+      const { error } = await client.from("user").update(data).eq("id", userDto.id);
+      if (error) throw error;
+    } else {
+      const { error } = await client.from("user").insert([data]);
+      if (error) throw error;
+    }
+    return { success: true };
+  } catch (error: any) {
+    throw new ApiError("Saving user failed: " + error.message, 500);
   }
 }
 
 async function getUsers(query: any) {
-  const client = await getClient();
-  const sql: string = `
-  SELECT
-    U.ID,
-    U.SALUTATION,
-    U.FIRSTNAME,
-    U.OTHERNAMES,
-    U.LASTNAME,
-    U.ROLES,
-    U.EMAIL,
-    U.PHONE,
-    U.USERNAME,
-    U.PASSWORD,
-    U.DEPARTMENT_ID,
-    D.NAME DEPARTMENT
-  FROM
-    ASSET.USER U
-  LEFT JOIN
-    ASSET.DEPARTMENT D
-  ON
-    U.DEPARTMENT_ID = D.ID
-  ORDER BY
-    ${query.sort} ${query.direction}`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sql);
-    console.log(result);
-    const users: User[] = result.rows;
-    return users;
-  } catch (error) {
-    throw new ApiError("Fetching users failed: " + error, 500);
-  } finally {
-    await client.end();
+    const { data, error } = await client
+      .from("user")
+      .select(
+        `id, salutation, firstname, othernames, lastname, roles, email, phone, username, password, department_id,
+        department(name)`
+      )
+      .order(query.sort || "id", { ascending: query.direction === "ASC" });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error: any) {
+    throw new ApiError("Fetching users failed: " + error.message, 500);
   }
 }
 
 async function getUsersByFilter(query: any) {
-  const client = await getClient();
-  const sql: string = `
-  SELECT
-    U.ID,
-    U.SALUTATION,
-    U.FIRSTNAME,
-    U.OTHERNAMES,
-    U.LASTNAME,
-    U.ROLES,
-    U.EMAIL,
-    U.PHONE,
-    U.USERNAME,
-    U.PASSWORD,
-    U.DEPARTMENT_ID,
-    D.NAME DEPARTMENT
-  FROM
-    ASSET.USER U
-  LEFT JOIN
-    ASSET.DEPARTMENT D
-  ON
-    U.DEPARTMENT_ID = D.ID
-  WHERE 
-    FIRSTNAME ILIKE $1
-    OR OTHERNAMES ILIKE $1
-    OR LASTNAME ILIKE $1
-    OR EMAIL ILIKE $1
-    OR PHONE ILIKE $1
-    OR USERNAME ILIKE $1
-  ORDER BY
-    ${query.sort} ${query.direction}`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sql, [query.filter]);
-    const users: User[] = result.rows;
-    return users;
-  } catch (error) {
-    throw new ApiError("Fetching users failed: " + error, 500);
-  } finally {
-    await client.end();
+    const { data, error } = await client
+      .from("user")
+      .select(
+        `id, salutation, firstname, othernames, lastname, roles, email, phone, username, password, department_id,
+        department(name)`
+      )
+      .or(
+        `firstname.ilike.%${query.filter}%,othernames.ilike.%${query.filter}%,lastname.ilike.%${query.filter}%,email.ilike.%${query.filter}%,phone.ilike.%${query.filter}%,username.ilike.%${query.filter}%`
+      )
+      .order(query.sort || "id", { ascending: query.direction === "ASC" });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error: any) {
+    throw new ApiError("Fetching users failed: " + error.message, 500);
   }
 }
 
 async function getUserById(userId: string) {
-  const client = await getClient();
-  const sql: string = `
-  SELECT
-    U.ID,
-    U.SALUTATION,
-    U.FIRSTNAME,
-    U.OTHERNAMES,
-    U.LASTNAME,
-    U.ROLES,
-    U.EMAIL,
-    U.PHONE,
-    U.USERNAME,
-    U.PASSWORD,
-    U.DEPARTMENT_ID,
-    D.NAME DEPARTMENT
-  FROM
-    ASSET.USER U
-  LEFT JOIN
-    ASSET.DEPARTMENT D
-  ON
-    U.DEPARTMENT_ID = D.ID
-  WHERE
-    U.ID = $1`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sql, [userId]);
-    const user: User = result.rows[0];
-    return user;
-  } catch (error) {
-    throw new ApiError("Fetching users failed: " + error, 500);
-  } finally {
-    await client.end();
+    const { data, error } = await client
+      .from("user")
+      .select(
+        `id, salutation, firstname, othernames, lastname, roles, email, phone, username, password, department_id,
+        department(name)`
+      )
+      .eq("id", userId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    throw new ApiError("Fetching users failed: " + error.message, 500);
   }
 }
 
 async function getUsersByExample(exampleDto: User, query: any) {
-  const client = await getClient();
-  const baseSql: string = `
-  SELECT
-    U.ID,
-    U.SALUTATION,
-    U.FIRSTNAME,
-    U.OTHERNAMES,
-    U.LASTNAME,
-    U.ROLES,
-    U.EMAIL,
-    U.PHONE,
-    U.USERNAME,
-    U.PASSWORD,
-    U.DEPARTMENT_ID,
-    D.NAME DEPARTMENT
-  FROM
-    ASSET.USER U
-LEFT JOIN
-	ASSET.DEPARTMENT D
-ON
-	U.DEPARTMENT_ID = D.ID
-  `;
-  const whereClauses: string[] = [];
-  const params: any[] = [];
-  let paramIndex = 1;
-
-  if (exampleDto) {
-    Object.entries(exampleDto).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        whereClauses.push(`${key} = $${paramIndex}`);
-        params.push(value);
-        paramIndex++;
-      }
-    });
-  }
-
-  const whereSql =
-    whereClauses.length > 0 ? ` WHERE ${whereClauses.join(" AND ")}` : "";
-
-  const orderSql = query?.sort
-    ? ` ORDER BY ${query.sort} ${query.direction ?? "ASC"}`
-    : "";
-
-  const sql = `${baseSql} ${whereSql} ${orderSql}`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sql, params);
-    const users: User[] = result.rows;
-    return users;
-  } catch (error) {
-    throw new ApiError("Fetching users failed: " + error, 500);
-  } finally {
-    await client.end();
+    let q = client
+      .from("user")
+      .select(
+        `id, salutation, firstname, othernames, lastname, roles, email, phone, username, password, department_id,
+        department(name)`
+      );
+
+    if (exampleDto) {
+      Object.entries(exampleDto).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          q = q.eq(key, value);
+        }
+      });
+    }
+
+    const { data, error } = await q.order(query.sort || "id", {
+      ascending: query.direction === "ASC",
+    });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error: any) {
+    throw new ApiError("Fetching users failed: " + error.message, 500);
   }
 }
 
 async function changePassword(passwordDto: any) {
-  const client = await getClient();
-  const sqlEdit: string = `
-  UPDATE
-    ASSET.USER
-  SET
-    PASSWORD=$1
-  WHERE
-    ID = $2`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sqlEdit, [
-      passwordDto.password,
-      passwordDto.id,
-    ]);
-    return result;
-  } catch (error) {
-    throw new ApiError("Changing password failed: " + error, 500);
-  } finally {
-    await client.end();
+    const { error } = await client
+      .from("user")
+      .update({ password: passwordDto.password })
+      .eq("id", passwordDto.id);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    throw new ApiError("Changing password failed: " + error.message, 500);
   }
 }
 

@@ -4,149 +4,99 @@ import { getClient } from "@/utils/db";
 import { Department } from "@/utils/types";
 
 async function saveDepartment(departmentDto: any) {
-  const client = await getClient();
-  const sqlNew: string = `
-  INSERT INTO
-    ASSET.DEPARTMENT
-      (
-        NAME
-      ) 
-  VALUES ($1)`;
-
-  const sqlEdit: string = `
-  UPDATE
-    ASSET.DEPARTMENT
-  SET
-    NAME=$1
-  WHERE
-    ID = $2`;
-
-  let params: any[] = [departmentDto.name];
-  if (!!departmentDto.id) {
-    params.push(departmentDto.id);
-  }
+  const client = getClient();
 
   try {
-    const result = await client.query(
-      !!departmentDto.id ? sqlEdit : sqlNew,
-      params
-    );
-    return result;
-  } catch (error) {
-    throw new ApiError("Saving department failed: " + error, 500);
-  } finally {
-    await client.end();
+    if (departmentDto.id) {
+      const { error } = await client
+        .from("department")
+        .update({ name: departmentDto.name })
+        .eq("id", departmentDto.id);
+      if (error) throw error;
+    } else {
+      const { error } = await client
+        .from("department")
+        .insert([{ name: departmentDto.name }]);
+      if (error) throw error;
+    }
+    return { success: true };
+  } catch (error: any) {
+    throw new ApiError("Saving department failed: " + error.message, 500);
   }
 }
 
 async function getDepartments(query: any) {
-  const client = await getClient();
-  const sql: string = `
-  SELECT
-    ID,
-    NAME
-  FROM
-    ASSET.DEPARTMENT
-  ORDER BY
-    ${query.sort || "ID"} ${query.direction || "DESC"}`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sql);
-    const departments: Department[] = result.rows;
-    return departments;
-  } catch (error) {
-    throw new ApiError("Fetching departments failed: " + error, 500);
-  } finally {
-    await client.end();
+    const { data, error } = await client
+      .from("department")
+      .select("id, name")
+      .order(query.sort || "id", { ascending: query.direction === "ASC" });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error: any) {
+    throw new ApiError("Fetching departments failed: " + error.message, 500);
   }
 }
 
 async function getDepartmentsByFilter(query: any) {
-  const client = await getClient();
-  const sql: string = `
-  SELECT
-    ID,
-    NAME
-  FROM
-    ASSET.DEPARTMENT
-  WHERE 
-    NAME ILIKE $1
-  ORDER BY
-    ${query.sort} ${query.direction}`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sql, [query.filter]);
-    const departments: Department[] = result.rows;
-    return departments;
-  } catch (error) {
-    throw new ApiError("Fetching departments failed: " + error, 500);
-  } finally {
-    await client.end();
+    const { data, error } = await client
+      .from("department")
+      .select("id, name")
+      .ilike("name", `%${query.filter}%`)
+      .order(query.sort || "id", { ascending: query.direction === "ASC" });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error: any) {
+    throw new ApiError("Fetching departments failed: " + error.message, 500);
   }
 }
 
 async function getDepartmentById(departmentId: string) {
-  const client = await getClient();
-  const sql: string = `
-  SELECT
-      ID,
-      NAME
-    FROM
-      ASSET.DEPARTMENT
-    WHERE
-      ID = $1`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sql, [departmentId]);
-    const department: Department = result.rows[0];
-    return department;
-  } catch (error) {
-    throw new ApiError("Fetching departments failed: " + error, 500);
-  } finally {
-    await client.end();
+    const { data, error } = await client
+      .from("department")
+      .select("id, name")
+      .eq("id", departmentId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    throw new ApiError("Fetching departments failed: " + error.message, 500);
   }
 }
 
 async function getDepartmentsByExample(exampleDto: Department, query: any) {
-  const client = await getClient();
-  const baseSql: string = `
-  SELECT
-    ID,
-    NAME
-  FROM
-    ASSET.DEPARTMENT
-  `;
-  const whereClauses: string[] = [];
-  const params: any[] = [];
-  let paramIndex = 1;
-
-  if (exampleDto) {
-    Object.entries(exampleDto).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        whereClauses.push(`${key} = $${paramIndex}`);
-        params.push(value);
-        paramIndex++;
-      }
-    });
-  }
-
-  const whereSql =
-    whereClauses.length > 0 ? ` WHERE ${whereClauses.join(" AND ")}` : "";
-
-  const orderSql = query?.sort
-    ? ` ORDER BY ${query.sort} ${query.direction ?? "ASC"}`
-    : "";
-
-  const sql = `${baseSql} ${whereSql} ${orderSql}`;
+  const client = getClient();
 
   try {
-    const result = await client.query(sql, params);
-    const departments: Department[] = result.rows;
-    return departments;
-  } catch (error) {
-    throw new ApiError("Fetching departments failed: " + error, 500);
-  } finally {
-    await client.end();
+    let q = client.from("department").select("id, name");
+
+    if (exampleDto) {
+      Object.entries(exampleDto).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          q = q.eq(key, value);
+        }
+      });
+    }
+
+    const { data, error } = await q.order(query.sort || "id", {
+      ascending: query.direction === "ASC",
+    });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error: any) {
+    throw new ApiError("Fetching departments failed: " + error.message, 500);
   }
 }
 

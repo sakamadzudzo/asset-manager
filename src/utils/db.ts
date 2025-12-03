@@ -1,9 +1,8 @@
-import { Client } from "pg";
+import { createClient } from "@supabase/supabase-js";
 
-export async function getClient() {
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-  });
-  await client.connect();
-  return client;
+export function getClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 }
