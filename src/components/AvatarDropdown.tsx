@@ -29,7 +29,7 @@ export default function AvatarDropdown() {
         </Avatar>
       </DropdownTrigger>
       <DropdownMenu className={`text-foreground `}>
-        <DropdownItem
+        {/* <DropdownItem
           as="a"
           href={`/user/one?id=${user?.id}`}
           key={"profile"}
@@ -44,7 +44,7 @@ export default function AvatarDropdown() {
           endContent={<GearIcon weight="thin" size={25} />}
         >
           Settings
-        </DropdownItem>
+        </DropdownItem> */}
         <DropdownItem
           color="danger"
           onClick={() => dispatch(logout())}

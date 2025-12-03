@@ -59,3 +59,5 @@ You are free to use other cloud hosting providers which can provide the same fun
 - Encrypt password
 - Add barcode/qr code scanning for serial number 
 - Generate asset tag from asset details
+- Add profile
+- Add settings
