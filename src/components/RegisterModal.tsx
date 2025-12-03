@@ -12,9 +12,9 @@ import {
   SelectItem,
 } from "@heroui/react";
 import { SignInIcon, XIcon } from "@phosphor-icons/react";
+import { Salutation, Role } from "@/utils/types";
 
-const salutations = ["MR", "MRS", "MS", "DR", "PROF"];
-const roles = ["ADMIN", "TEACHER", "PARENT", "STUDENT"];
+const salutations = Object.values(Salutation);
 
 export default function RegisterModal({
   isOpen,
@@ -30,62 +30,56 @@ export default function RegisterModal({
   const [form, setForm] = useState({
     username: "",
     password: "",
-    salutation: "MR",
+    salutation: Salutation.MR,
     firstname: "",
     othernames: "",
     lastname: "",
     email: "",
-    mobileNumber: "",
-    dateOfBirth: "",
-    role: "ADMIN",
+    phone: "",
+    department_id: 0,
   });
-  const [submitted, setSubmitted] = useState<any>(null);
+  const [error, setError] = useState("");
 
-  const handleChange = (key: string, value: string) => {
+  const handleChange = (key: string, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
     incrementLoading();
 
-    // Build the JSON object as per your API
-    const payload = {
-      datestamp: new Date().toISOString(),
-      status: "ACTIVE",
-      id: 0,
-      username: form.username,
-      password: form.password,
-      verified: false,
-      enabled: true,
-      changePassword: true,
-      person: {
-        datestamp: new Date().toISOString(),
-        status: "ACTIVE",
-        id: 0,
+    try {
+      const payload = {
+        username: form.username,
+        password: form.password,
         salutation: form.salutation,
         firstname: form.firstname,
         othernames: form.othernames,
         lastname: form.lastname,
         email: form.email,
-        mobileNumber: form.mobileNumber,
-        mobileNumber2: "",
-        telNumber: "",
-        whatsapp: "",
-        facebook: "",
-        linkedin: "",
-        dateOfBirth: form.dateOfBirth,
-      },
-      roles: [form.role],
-    };
+        phone: form.phone,
+        department_id: form.department_id || null,
+        rolesString: Role.USER,
+      };
 
-    setTimeout(() => {
-      decrementLoading();
-      setSubmitted(payload);
+      const response = await fetch("/api/user?action=save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Registration failed");
+      }
+
       onOpenChange(false);
-    }, 2000);
-
-    // Here you would POST `payload` to your register endpoint
+    } catch (err: any) {
+      setError(err.message || "Registration failed");
+    } finally {
+      decrementLoading();
+    }
   };
 
   return (
@@ -105,6 +99,7 @@ export default function RegisterModal({
           Register
         </ModalHeader>
         <ModalBody>
+          {error && <div className="text-red-500 text-sm">{error}</div>}
           <Form onSubmit={onSubmit} className="space-y-3">
             <Input
               isRequired
@@ -181,35 +176,14 @@ export default function RegisterModal({
               variant="bordered"
             />
             <Input
-              label="Mobile Number"
-              name="mobileNumber"
-              placeholder="Enter mobile number"
-              value={form.mobileNumber}
-              onValueChange={(v) => handleChange("mobileNumber", v)}
+              label="Phone"
+              name="phone"
+              placeholder="Enter phone number"
+              value={form.phone}
+              onValueChange={(v) => handleChange("phone", v)}
               size="sm"
               variant="bordered"
             />
-            <Input
-              label="Date of Birth"
-              name="dateOfBirth"
-              type="date"
-              value={form.dateOfBirth}
-              onValueChange={(v) => handleChange("dateOfBirth", v)}
-              size="sm"
-              variant="bordered"
-            />
-            <Select
-              label="Role"
-              selectedKeys={[form.role]}
-              variant="bordered"
-              onSelectionChange={(keys) =>
-                handleChange("role", Array.from(keys)[0] as string)
-              }
-            >
-              {roles.map((r) => (
-                <SelectItem key={r}>{r}</SelectItem>
-              ))}
-            </Select>
             <Button
               type="submit"
               color="primary"
