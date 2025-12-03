@@ -57,6 +57,7 @@ export default function AllUsersPage() {
       ...row,
       key: row.id || row._id || row.name,
       roles: row.roles.join(", "),
+      department: row.department?.name || "",
       actions: [
         {
           label: "View",

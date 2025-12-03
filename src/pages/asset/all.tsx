@@ -2,7 +2,7 @@ import MyTable, { Column } from "@/components/MyTable";
 import useToastError from "@/hooks/toasts/ToastError";
 import { useAssetsAll, useAssetsAllByFilter } from "@/hooks/useAssets";
 import { statuses } from "@/utils/classes";
-import { formatDate } from "@/utils/helpers";
+import { formatDate, getUserFullname } from "@/utils/helpers";
 import { SortDescriptor } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
@@ -58,6 +58,9 @@ export default function AllAssetsPage() {
       ...row,
       key: row.id || row._id || row.name,
       purchase_date: formatDate(row.purchase_date, false),
+      department: row.department?.name || "",
+      user: getUserFullname(row.user) || "",
+      category: row.category?.name || "",
       actions: [
         {
           label: "View",
