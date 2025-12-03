@@ -20,12 +20,12 @@ export default function AvatarDropdown() {
       <DropdownTrigger>
         <Avatar
           src={user?.avatarUrl}
-          name={getInitials(user?.name || "User")}
+          name={getInitials(user)}
           size="md"
           color="primary"
           className="cursor-pointer"
         >
-          {!user?.avatarUrl && getInitials(user?.person?.name || "User")}
+          {!user?.avatarUrl && getInitials(user)}
         </Avatar>
       </DropdownTrigger>
       <DropdownMenu className={`text-foreground `}>

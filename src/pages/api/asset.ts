@@ -3,6 +3,18 @@ import { ApiError } from "./../../utils/classes";
 import { getClient } from "@/utils/db";
 import { Asset } from "@/utils/types";
 
+const getCookie = (req: NextApiRequest, name: string) => {
+  const cookies = req.headers.cookie?.split(";") || [];
+  const cookie = cookies.find((c) => c.trim().startsWith(`${name}=`));
+  return cookie ? cookie.split("=")[1] : null;
+};
+
+const isUserRestricted = (req: NextApiRequest) => {
+  const isAdmin = getCookie(req, "isAdmin") === "true";
+  const userId = getCookie(req, "userId");
+  return !isAdmin && userId ? userId : null;
+};
+
 async function saveAsset(assetDto: any) {
   const client = getClient();
   const data = {
@@ -19,7 +31,10 @@ async function saveAsset(assetDto: any) {
 
   try {
     if (assetDto.id) {
-      const { error } = await client.from("asset").update(data).eq("id", assetDto.id);
+      const { error } = await client
+        .from("asset")
+        .update(data)
+        .eq("id", assetDto.id);
       if (error) throw error;
     } else {
       const { error } = await client.from("asset").insert([data]);
@@ -31,17 +46,23 @@ async function saveAsset(assetDto: any) {
   }
 }
 
-async function getAssets(query: any) {
-  const client = getClient();
+async function getAssets(query: any, req: NextApiRequest) {
+  const supabase = getClient();
+  const userId = isUserRestricted(req);
 
   try {
-    const { data, error } = await client
-      .from("asset")
-      .select(
-        `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
+    let client = supabase.from("asset").select(
+      `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
         category(name), department(name), user(salutation, firstname, othernames, lastname)`
-      )
-      .order(query.sort || "id", { ascending: query.direction === "ASC" });
+    );
+
+    if (userId) {
+      client = client.eq("user_id", userId);
+    }
+
+    const { data, error } = await client.order(query.sort || "id", {
+      ascending: query.direction === "ASC",
+    });
 
     if (error) throw error;
     return data || [];
@@ -50,11 +71,12 @@ async function getAssets(query: any) {
   }
 }
 
-async function getAssetsByFilter(query: any) {
-  const client = getClient();
+async function getAssetsByFilter(query: any, req: NextApiRequest) {
+  const supabase = getClient();
+  const userId = isUserRestricted(req);
 
   try {
-    const { data, error } = await client
+    let client = supabase
       .from("asset")
       .select(
         `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
@@ -62,8 +84,15 @@ async function getAssetsByFilter(query: any) {
       )
       .or(
         `name.ilike.%${query.filter}%,description.ilike.%${query.filter}%,serial_number.ilike.%${query.filter}%`
-      )
-      .order(query.sort || "id", { ascending: query.direction === "ASC" });
+      );
+
+    if (userId) {
+      client = client.eq("user_id", userId);
+    }
+
+    const { data, error } = await client.order(query.sort || "id", {
+      ascending: query.direction === "ASC",
+    });
 
     if (error) throw error;
     return data || [];
@@ -72,18 +101,24 @@ async function getAssetsByFilter(query: any) {
   }
 }
 
-async function getAssetById(assetId: string) {
-  const client = getClient();
+async function getAssetById(assetId: string, req: NextApiRequest) {
+  const supabase = getClient();
+  const userId = isUserRestricted(req);
 
   try {
-    const { data, error } = await client
+    let client = supabase
       .from("asset")
       .select(
         `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
         category(name), department(name), user(salutation, firstname, othernames, lastname)`
       )
-      .eq("id", assetId)
-      .single();
+      .eq("id", assetId);
+
+    if (userId) {
+      client = client.eq("user_id", userId);
+    }
+
+    const { data, error } = await client.single();
 
     if (error) throw error;
     return data;
@@ -92,26 +127,33 @@ async function getAssetById(assetId: string) {
   }
 }
 
-async function getAssetsByExample(exampleDto: Asset, query: any) {
-  const client = getClient();
+async function getAssetsByExample(
+  exampleDto: Asset,
+  query: any,
+  req: NextApiRequest
+) {
+  const supabase = getClient();
+  const userId = isUserRestricted(req);
 
   try {
-    let q = client
-      .from("asset")
-      .select(
-        `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
+    let client = supabase.from("asset").select(
+      `id, name, description, serial_number, category_id, purchase_date, cost, department_id, user_id, deleted,
         category(name), department(name), user(salutation, firstname, othernames, lastname)`
-      );
+    );
 
     if (exampleDto) {
       Object.entries(exampleDto).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
-          q = q.eq(key, value);
+          client = client.eq(key, value);
         }
       });
     }
 
-    const { data, error } = await q.order(query.sort || "id", {
+    if (userId) {
+      client = client.eq("user_id", userId);
+    }
+
+    const { data, error } = await client.order(query.sort || "id", {
       ascending: query.direction === "ASC",
     });
 
@@ -135,22 +177,22 @@ export default async function handler(
         return res.status(201).json(data);
       }
       if (action === "example") {
-        const data = await getAssetsByExample(req.body, req.query);
+        const data = await getAssetsByExample(req.body, req.query, req);
         return res.status(200).json(data);
       }
     }
 
     if (req.method === "GET") {
       if (action === "all") {
-        const data = await getAssets(req.query);
+        const data = await getAssets(req.query, req);
         return res.status(200).json(data);
       }
       if (action === "one" && assetId) {
-        const data = await getAssetById(assetId as string);
+        const data = await getAssetById(assetId as string, req);
         return res.status(200).json(data);
       }
       if (action === "filtered") {
-        const data = await getAssetsByFilter(req.query);
+        const data = await getAssetsByFilter(req.query, req);
         return res.status(200).json(data);
       }
     }

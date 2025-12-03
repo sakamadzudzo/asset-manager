@@ -69,7 +69,7 @@ export const AdminDashboard = ({ user }: { user: any }) => {
     {
       statistic: stats.totalCategories,
       detail: "Categories",
-      colors: "bg-info/80 hover:shadow-info",
+      colors: "bg-foreground hover:shadow-info",
     },
   ];
 

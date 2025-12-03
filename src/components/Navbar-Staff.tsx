@@ -25,13 +25,13 @@ export default function Navbar_Staff({
   };
 
   useEffect(() => {
-    const genralItems: MyDropdown[] = [
-      { label: "Assets", href: "/asset/all" },
+    const genralItems: MyDropdown[] = [{ label: "Assets", href: "/asset/all" }];
+
+    const adminItems: MyDropdown[] = [
+      { label: "Users", href: "/user/all" },
       { label: "Categories", href: "/category/all" },
       { label: "Departments", href: "/department/all" },
     ];
-
-    const adminItems: MyDropdown[] = [{ label: "Users", href: "/user/all" }];
 
     const rawItems: MyDropdown[] = [
       ...genralItems,

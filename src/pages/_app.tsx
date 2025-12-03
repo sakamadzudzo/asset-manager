@@ -10,6 +10,7 @@ import Navbar_Guest from "@/components/Navbar-Guest";
 import Navbar_Staff from "@/components/Navbar-Staff";
 import { rehydrate } from "@/store/slices/authSlice";
 import Head from "next/head";
+import { useRouter } from "next/router";
 
 function AppContent({
   Component,
@@ -20,11 +21,13 @@ function AppContent({
   saveDarkMode,
   loading,
 }: any) {
-  const { token, user } = useSelector((state: any) => state.auth);
+  const { user } = useSelector((state: any) => state.auth);
   const dispatch = useDispatch();
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(user);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // Sync isAuthenticated with Redux store's token and user
+  // Sync isAuthenticated with Redux store's user
   useEffect(() => {
     setIsAuthenticated(!!user);
   }, [user]);
@@ -36,10 +39,29 @@ function AppContent({
         const parsed = JSON.parse(auth);
         if (parsed.user) {
           dispatch(rehydrate(parsed));
+          const roles = parsed.user.roles;
+          const isAdminUser = roles && roles.includes("ADMIN");
+          setIsAdmin(isAdminUser);
+          localStorage.setItem("isAdmin", isAdminUser);
+
+          document.cookie = `isAdmin=${isAdminUser}; path=/`;
+          document.cookie = `userId=${parsed.user.id}; path=/`;
         }
       } catch {}
     }
   }, [dispatch]);
+
+  useEffect(() => {
+    const adminRoutes = ["/user", "/department", "/category"];
+    const isAdminRoute = adminRoutes.some((route) =>
+      router.pathname.startsWith(route)
+    );
+    const isAdminUser = localStorage.getItem("isAdmin") === "true";
+
+    if (isAdminRoute && !isAdminUser) {
+      router.push("/");
+    }
+  }, [router.pathname, router]);
 
   let navbar = (
     <Navbar_Guest
