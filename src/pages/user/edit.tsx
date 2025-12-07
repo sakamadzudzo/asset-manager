@@ -117,7 +117,7 @@ export default function UserEdit({
     setStatusCode(0);
     incrementLoading();
 
-    if (!validate) {
+    if (!validate()) {
       return;
     }
 
